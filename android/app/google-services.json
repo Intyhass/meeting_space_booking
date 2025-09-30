@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "58916145091",
+    "project_id": "room-booking-3e0aa",
+    "storage_bucket": "room-booking-3e0aa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58916145091:android:7b509cce6c2d04e8875f76",
+        "android_client_info": {
+          "package_name": "com.example.meeting_space_booking"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6-DfPXr-o56k97WYfVODioi4ZwFmbMQg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
