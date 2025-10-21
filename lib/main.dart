@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:meeting_space_booking/booking_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +11,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeRight,
+    DeviceOrientation.landscapeLeft,
+  ]);
   runApp(const MyApp());
 }
 
@@ -80,15 +86,15 @@ class _ScreenAState extends State<ScreenA> {
               children: const [
                 Text(
                   'Ongoing',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Upcoming',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF388E3C),
                   ),
+                ),
+                Text(
+                  'Upcoming',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -98,84 +104,128 @@ class _ScreenAState extends State<ScreenA> {
             Expanded(
               child: Row(
                 children: [
-                  // Ongoing section
-                  Expanded(
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream:
-                          bookingsRef
-                              .where(
-                                'startTime',
-                                isGreaterThanOrEqualTo: DateTime(
-                                  DateTime.now().year,
-                                  DateTime.now().month,
-                                  DateTime.now().day,
-                                ),
-                              )
-                              .where(
-                                'startTime',
-                                isLessThan: DateTime(
-                                  DateTime.now().year,
-                                  DateTime.now().month,
-                                  DateTime.now().day + 1,
-                                ),
-                              )
-                              .orderBy('startTime')
-                              .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const Center(child: Text('No bookings today'));
-                        }
+                  SizedBox(
+                    width: 400,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: StreamBuilder<QuerySnapshot>(
+                            stream:
+                                bookingsRef
+                                    .where(
+                                      'startTime',
+                                      isGreaterThanOrEqualTo: DateTime(
+                                        DateTime.now().year,
+                                        DateTime.now().month,
+                                        DateTime.now().day,
+                                      ),
+                                    )
+                                    .where(
+                                      'startTime',
+                                      isLessThan: DateTime(
+                                        DateTime.now().year,
+                                        DateTime.now().month,
+                                        DateTime.now().day + 1,
+                                      ),
+                                    )
+                                    .orderBy('startTime')
+                                    .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              if (!snapshot.hasData ||
+                                  snapshot.data!.docs.isEmpty) {
+                                return const Center(
+                                  child: Text('No bookings today'),
+                                );
+                              }
 
-                        final bookings =
-                            snapshot.data!.docs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              return {
-                                'title': data['title'] ?? 'No Title',
-                                'startTime':
-                                    (data['startTime'] as Timestamp).toDate(),
-                                'endTime':
-                                    (data['endTime'] as Timestamp).toDate(),
-                              };
-                            }).toList();
+                              final bookings =
+                                  snapshot.data!.docs.map((doc) {
+                                    final data =
+                                        doc.data() as Map<String, dynamic>;
+                                    return {
+                                      'title': data['title'] ?? 'No Title',
+                                      'startTime':
+                                          (data['startTime'] as Timestamp)
+                                              .toDate(),
+                                      'endTime':
+                                          (data['endTime'] as Timestamp)
+                                              .toDate(),
+                                    };
+                                  }).toList();
 
-                        final now = DateTime.now();
-                        final ongoing = bookings.firstWhere(
-                          (b) =>
-                              now.isAfter(b['startTime']) &&
-                              now.isBefore(b['endTime']),
-                          orElse: () => {},
-                        );
+                              final now = DateTime.now();
+                              final ongoing = bookings.firstWhere(
+                                (b) =>
+                                    now.isAfter(b['startTime']) &&
+                                    now.isBefore(b['endTime']),
+                                orElse: () => {},
+                              );
 
-                        if (ongoing.isNotEmpty) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                ongoing['title'],
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              if (ongoing.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(25.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        ongoing['title'],
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Ends at: ${DateFormat.jm().format(ongoing['endTime'])}',
+                                        style: const TextStyle(
+                                          color: Color(0xFF555555),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                return const Text("No ongoing meeting");
+                              }
+                            },
+                          ),
+                        ),
+                        //Reserve Button
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/booking');
+                            },
+                            style: TextButton.styleFrom(
+                              backgroundColor: const Color(0xFF810725),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Ends at: ${DateFormat.jm().format(ongoing['endTime'])}',
-                                style: const TextStyle(
-                                  color: Color(0xFF555555),
-                                ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ],
-                          );
-                        } else {
-                          return const Text("No ongoing meeting");
-                        }
-                      },
+                            ),
+                            child: const Text(
+                              'Reserve Room',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -260,34 +310,6 @@ class _ScreenAState extends State<ScreenA> {
                                   ),
                                 );
                               },
-                            ),
-                          ),
-                        ),
-
-                        // Reserve button
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/booking');
-                            },
-                            style: TextButton.styleFrom(
-                              backgroundColor: const Color(0xFF810725),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text(
-                              'Reserve Room',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
                             ),
                           ),
                         ),
